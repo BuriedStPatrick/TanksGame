@@ -1,5 +1,7 @@
-﻿using System.Linq;
-using Assets.Scripts.Tank;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using Assets.Scripts.Objects.Tank;
 using UnityEngine;
 
 namespace Assets.Scripts.Shell
@@ -23,22 +25,32 @@ namespace Assets.Scripts.Shell
         {
             // Find all the tanks in an area around the shell and damage them.
             var colliders = Physics.OverlapSphere(transform.position, ExplosionRadius, TankMask);
-            foreach (var col in colliders.Where(c => 
-                    c.GetComponent<Rigidbody>() &&
-                    c.GetComponent<Rigidbody>().GetComponent<TankHealth>()))
-            {
-                var targetRigidbody = col.GetComponent<Rigidbody>();
-                targetRigidbody.AddExplosionForce(ExplosionForce, transform.position, ExplosionRadius);
-                var targetHealth = targetRigidbody.GetComponent<TankHealth>();
-
-                DealDamage(targetHealth, CalculateDamage(targetRigidbody.position));
-            }
+            HandleCollisions(colliders);
             PlayParticles();
             PlaySound();
             DestroyExplosion();
         }
 
-        private void DealDamage(TankHealth targetHealth, float damage)
+        private void HandleCollisions(IEnumerable<Collider> colliders)
+        {
+            foreach (var targetRigidbody in ExtractTargetRigidbodies(colliders))
+            {
+                targetRigidbody.AddExplosionForce(ExplosionForce, transform.position, ExplosionRadius);
+                var targetHealth = targetRigidbody.GetComponent<TankHealth>();
+                DealDamage(targetHealth, CalculateDamage(targetRigidbody.position));
+            }
+        }
+
+        private static IEnumerable<Rigidbody> ExtractTargetRigidbodies(IEnumerable<Collider> colliders)
+        {
+            return colliders
+                .Where(c =>
+                    c.GetComponent<Rigidbody>() &&
+                    c.GetComponent<Rigidbody>().GetComponent<TankHealth>())
+                .Select(col => col.GetComponent<Rigidbody>());
+        }
+
+        private static void DealDamage(TankHealth targetHealth, float damage)
         {
             targetHealth.TakeDamage(damage);
         }

@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Linq;
 using Assets.Scripts.Camera;
+using Assets.Scripts.Managers.Players;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -14,13 +15,13 @@ namespace Assets.Scripts.Managers
         public CameraControl CameraControl;
         public Text MessageText;
         public GameObject TankPrefab;
-        public TankManager[] Tanks;
+        public PlayerManager[] PlayerManagers;
 
         private int _roundNumber;
         private WaitForSeconds _startWait;
         private WaitForSeconds _endWait;
-        private TankManager _roundWinner;
-        private TankManager _gameWinner;
+        private PlayerManager _roundWinner;
+        private PlayerManager _gameWinner;
 
         private void Start()
         {
@@ -35,21 +36,21 @@ namespace Assets.Scripts.Managers
 
         private void SpawnAllTanks()
         {
-            for (var i = 0; i < Tanks.Length; i++)
+            for (var i = 0; i < PlayerManagers.Length; i++)
             {
-                Tanks[i].Instance =
-                    Instantiate(TankPrefab, Tanks[i].SpawnPoint.position, Tanks[i].SpawnPoint.rotation) as GameObject;
-                Tanks[i].PlayerNumber = i + 1;
-                Tanks[i].Setup();
+                PlayerManagers[i].Instance =
+                    Instantiate(TankPrefab, PlayerManagers[i].Player.SpawnPoint.position, PlayerManagers[i].Player.SpawnPoint.rotation) as GameObject;
+                PlayerManagers[i].Player.Number = i + 1;
+                PlayerManagers[i].Setup();
             }
         }
 
         private void SetCameraTargets()
         {
-            var targets = new Transform[Tanks.Length];
+            var targets = new Transform[PlayerManagers.Length];
             for (var i = 0; i < targets.Length; i++)
             {
-                targets[i] = Tanks[i].Instance.transform;
+                targets[i] = PlayerManagers[i].Instance.transform;
             }
 
             CameraControl.Targets = targets;
@@ -108,17 +109,17 @@ namespace Assets.Scripts.Managers
 
         private bool IsOneTankLeft()
         {
-            return Tanks.Count(t => t.Instance.activeSelf) <= 1;
+            return PlayerManagers.Count(t => t.Instance.activeSelf) <= 1;
         }
 
-        private TankManager GetRoundWinner()
+        private PlayerManager GetRoundWinner()
         {
-            return Tanks.FirstOrDefault(t => t.Instance.activeSelf);
+            return PlayerManagers.FirstOrDefault(t => t.Instance.activeSelf);
         }
 
-        private TankManager GetGameWinner()
+        private PlayerManager GetGameWinner()
         {
-            return Tanks.FirstOrDefault(tankManager => tankManager.Wins == NumRoundsToWin);
+            return PlayerManagers.FirstOrDefault(tankManager => tankManager.Wins == NumRoundsToWin);
         }
 
         private string EndMessage()
@@ -130,7 +131,7 @@ namespace Assets.Scripts.Managers
 
             message += "\n\n\n\n";
 
-            message = Tanks.Aggregate(message, (current, tankManager) =>
+            message = PlayerManagers.Aggregate(message, (current, tankManager) =>
                 current + (tankManager.ColoredPlayerText + ": " + tankManager.Wins + " WINS\n"));
 
             if (_gameWinner != null)
@@ -141,7 +142,7 @@ namespace Assets.Scripts.Managers
 
         private void ResetAllTanks()
         {
-            foreach (var tankManager in Tanks)
+            foreach (var tankManager in PlayerManagers)
             {
                 tankManager.Reset();
             }
@@ -149,7 +150,7 @@ namespace Assets.Scripts.Managers
 
         private void EnableTankControl()
         {
-            foreach (var tankManager in Tanks)
+            foreach (var tankManager in PlayerManagers)
             {
                 tankManager.EnableControl();
             }
@@ -157,7 +158,7 @@ namespace Assets.Scripts.Managers
 
         private void DisableTankControl()
         {
-            foreach (var tankManager in Tanks)
+            foreach (var tankManager in PlayerManagers)
             {
                 tankManager.DisableControl();
             }
