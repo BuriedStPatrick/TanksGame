@@ -12,6 +12,8 @@ namespace Assets.Scripts.Managers.Players
         [HideInInspector] public string ColoredPlayerText;
         [HideInInspector] public GameObject Instance;
         [HideInInspector] public int Wins;
+        [HideInInspector] public TankMovement Movement;
+        [HideInInspector] public TankShooting Shooting;
         
         private GameObject _canvasGameObject;
 
@@ -24,9 +26,7 @@ namespace Assets.Scripts.Managers.Players
 
         private void SetupRenderers()
         {
-            var renderers = Instance.GetComponentsInChildren<MeshRenderer>();
-
-            foreach (var renderer in renderers)
+            foreach (var renderer in Instance.GetComponentsInChildren<MeshRenderer>())
             {
                 renderer.material.color = Player.Color;
             }
@@ -42,23 +42,24 @@ namespace Assets.Scripts.Managers.Players
 
         private void SetupPlayer()
         {
-            Player.Movement = Instance.GetComponent<TankMovement>();
-            Player.Shooting = Instance.GetComponent<TankShooting>();
-            Player.Setup();
+            Movement = Instance.GetComponent<TankMovement>();
+            Shooting = Instance.GetComponent<TankShooting>();
+            Movement.PlayerNumber = Player.Number;
+            Shooting.PlayerNumber = Player.Number;
         }
 
         public void DisableControl()
         {
-            Player.Movement.enabled = false;
-            Player.Shooting.enabled = false;
+            Movement.enabled = false;
+            Shooting.enabled = false;
 
             _canvasGameObject.SetActive(false);
         }
 
         public void EnableControl()
         {
-            Player.Movement.enabled = true;
-            Player.Shooting.enabled = true;
+            Movement.enabled = true;
+            Shooting.enabled = true;
 
             _canvasGameObject.SetActive(true);
         }

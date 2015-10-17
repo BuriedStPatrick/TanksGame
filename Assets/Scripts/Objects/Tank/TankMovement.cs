@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using Assets.Scripts.Enums;
+using UnityEngine;
 
 namespace Assets.Scripts.Objects.Tank
 {
@@ -18,12 +19,13 @@ namespace Assets.Scripts.Objects.Tank
         private float _movementInputValue;
         private float _turnInputValue;
         private float _originalPitch;
+        private TankStates State;
 
         private void Awake()
         {
             _rigidbody = GetComponent<Rigidbody>();
+            State = TankStates.Idle;
         }
-
 
         private void OnEnable ()
         {
@@ -31,7 +33,6 @@ namespace Assets.Scripts.Objects.Tank
             _movementInputValue = 0f;
             _turnInputValue = 0f;
         }
-
 
         private void OnDisable ()
         {
@@ -48,13 +49,16 @@ namespace Assets.Scripts.Objects.Tank
 
         private void Update()
         {
-            // Store the player's input and make sure the audio for the engine is playing.
-            _movementInputValue = Input.GetAxis(_movementAxisName);
-            _turnInputValue = Input.GetAxis(_turnAxisName);
-
+            HandleInput();
+            SetState();
             EngineAudio();
         }
 
+        private void HandleInput()
+        {
+            _movementInputValue = Input.GetAxis(_movementAxisName);
+            _turnInputValue = Input.GetAxis(_turnAxisName);
+        }
 
         private void EngineAudio()
         {
@@ -76,7 +80,6 @@ namespace Assets.Scripts.Objects.Tank
             }
         }
 
-
         private void FixedUpdate()
         {
             // Move and turn the tank.
@@ -84,14 +87,13 @@ namespace Assets.Scripts.Objects.Tank
             Turn();
         }
 
-
         private void Move()
         {
             // Adjust the position of the tank based on the player's input.
             var movement = transform.forward * _movementInputValue * Speed * Time.deltaTime;
             _rigidbody.MovePosition(_rigidbody.position + movement);
+            
         }
-
 
         private void Turn()
         {
@@ -99,6 +101,18 @@ namespace Assets.Scripts.Objects.Tank
             var turnAmount = _turnInputValue * TurnSpeed * Time.deltaTime;
             var turnRotation = Quaternion.Euler(0f, turnAmount, 0);
             _rigidbody.MoveRotation(_rigidbody.rotation * turnRotation);
+        }
+
+        private void SetState()
+        {
+            if (_movementInputValue > 0f)
+            {
+                State = TankStates.Moving;
+            }
+            else
+            {
+                State = TankStates.Idle;
+            }
         }
     }
 }

@@ -1,4 +1,6 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
+using Assets.Scripts.Extensions;
 using UnityEngine;
 
 namespace Assets.Scripts.Camera
@@ -9,18 +11,16 @@ namespace Assets.Scripts.Camera
         public float ScreenEdgeBuffer = 4f;
         public float MinSize = 6.5f;
         
-        [HideInInspector]
-        public Transform[] Targets;
+        [HideInInspector] public Transform[] Targets;
 
-        private UnityEngine.Camera _camera;
+        private UnityEngine.Camera _camera
+        {
+            get {return GetComponentInChildren<UnityEngine.Camera>();}
+        }
+
         private float _zoomSpeed;
         private Vector3 _moveVelocity;
         private Vector3 _desiredPosition;
-
-        private void Awake()
-        {
-            _camera = GetComponentInChildren<UnityEngine.Camera>();
-        }
 
         private void FixedUpdate()
         {
@@ -38,8 +38,7 @@ namespace Assets.Scripts.Camera
         {
             var averagePos = new Vector3();
             var numTargets = 0;
-
-            foreach (var target in Targets.Where(t => t.gameObject.activeSelf))
+            foreach (var target in Targets.Where(t => t.IsGameObjectActive()))
             {
                 averagePos += target.position;
                 numTargets++;
@@ -62,19 +61,31 @@ namespace Assets.Scripts.Camera
         private float FindRequiredSize()
         {
             var desiredLocalPos = transform.InverseTransformPoint(_desiredPosition);
-            var size = 0f;
+            var size = CalculateSizeForEachTarget(desiredLocalPos);
+            return CalculateScreenBuffer(size);
+        }
 
-            foreach (var target in Targets.Where(t => t.gameObject.activeSelf))
+        private float CalculateSizeForEachTarget(Vector3 desiredLocalPos)
+        {
+            var size = 0f;
+            foreach (var desiredPosToTarget in GetDesiredTargetPositions(desiredLocalPos))
             {
-                var targetLocalPos = transform.InverseTransformPoint(target.position);
-                var desiredPosToTarget = targetLocalPos - desiredLocalPos;
-                size = Mathf.Max (size, Mathf.Abs (desiredPosToTarget.y));
-                size = Mathf.Max (size, Mathf.Abs (desiredPosToTarget.x) / _camera.aspect);
+                size = Mathf.Max(size, Mathf.Abs(desiredPosToTarget.y));
+                size = Mathf.Max(size, Mathf.Abs(desiredPosToTarget.x) / _camera.aspect);
             }
-        
-            size += ScreenEdgeBuffer;
-            size = Mathf.Max(size, MinSize);
             return size;
+        }
+
+        private IEnumerable<Vector3> GetDesiredTargetPositions(Vector3 desiredLocalPos)
+        {
+            return Targets.Where(t => t.gameObject.activeSelf)
+                    .Select(target => transform.InverseTransformPoint(target.position))
+                    .Select(targetLocalPos => targetLocalPos - desiredLocalPos);
+        }
+
+        private float CalculateScreenBuffer(float size)
+        {
+            return Mathf.Max(size + ScreenEdgeBuffer, MinSize);
         }
 
         public void SetStartPositionAndSize()
